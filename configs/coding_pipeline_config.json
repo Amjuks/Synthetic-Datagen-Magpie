@@ -1,0 +1,25 @@
+{
+  "num_samples": 1000000,
+  "mode": "single-turn",
+  "output_csv": "./data/magpie_coding_dataset.csv",
+  "model_path": "meta-llama/Meta-Llama-3-8B-Instruct",
+  "languages": ["python", "javascript", "java", "cpp", "go", "rust", "typescript"],
+
+  "ins_topp": 1.0,
+  "ins_temp": 1.0,
+  "res_topp": 1.0,
+  "res_temp": 0.0,
+
+  "mt_turns": 3,
+  "oversample_factor": 1.8,
+  "quality_allow": ["good", "excellent"],
+  "min_neighbor_distance": 0.05,
+  "max_repeat_count": 0,
+
+  "device": null,
+  "distance_device": null,
+
+  "search_space_size": 500,
+  "search_batch_size": 1024,
+  "encoding_batch_size": 32768
+}
