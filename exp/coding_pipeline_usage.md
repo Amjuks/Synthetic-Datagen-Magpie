@@ -1,14 +1,29 @@
-# Coding Pipeline Usage Guide
+# Coding Pipeline Usage Guide (README-style workflow)
 
-## Quick start
+This custom pipeline automates the repo’s documented steps (`magpie_code.sh` -> optional multi-turn -> `unitag.sh` -> `gen_dis.py` -> export).
 
-From repository root:
+## Quick run
 
 ```bash
 python exp/gen_coding_dataset.py --config configs/coding_pipeline_config.json
 ```
 
-Or CLI-only:
+## Equivalent manual flow (what the script automates)
+
+```bash
+cd scripts
+bash magpie_code.sh meta-llama/Meta-Llama-3-8B-Instruct 100000 1 1 1 0
+bash magpie-multi-turn.sh <job_dir>/<file>_ins_res.json 3 0 meta-llama/Meta-Llama-3-8B-Instruct   # optional
+bash unitag.sh <input_json> quality 0 meta-llama/Meta-Llama-3-8B-Instruct
+bash unitag.sh <input_quality_json> classification 0 meta-llama/Meta-Llama-3-8B-Instruct
+bash unitag.sh <input_category_json> language 0 meta-llama/Meta-Llama-3-8B-Instruct
+cd ../exp
+python gen_dis.py --input_file <input_language_json>
+```
+
+---
+
+## Local GPU workstation
 
 ```bash
 python exp/gen_coding_dataset.py \
@@ -19,112 +34,77 @@ python exp/gen_coding_dataset.py \
   --languages python,javascript,java,cpp,go,rust
 ```
 
-The pipeline auto-detects GPUs and auto-tunes runtime params.
+If you need to pin GPU(s):
 
----
-
-## 1) Local machine (Linux workstation / desktop)
-
-### Requirements
-- NVIDIA GPU + CUDA driver (`nvidia-smi` works)
-- Python environment with repo requirements installed
-- Hugging Face access for Llama 8B model
-
-### Setup
 ```bash
-git clone https://github.com/magpie-align/magpie.git
-cd magpie
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-huggingface-cli login
-```
-
-### Run
-```bash
-python exp/gen_coding_dataset.py --config configs/coding_pipeline_config.json
-```
-
-### Optional manual override (if auto settings too aggressive)
-```bash
-python exp/gen_coding_dataset.py \
-  --num-samples 20000 \
-  --device 0 \
-  --tensor-parallel-size 1 \
-  --gpu-memory-utilization 0.9 \
-  --response-batch-size 64
+python exp/gen_coding_dataset.py --num-samples 10000 --device 0 --distance-device 0
 ```
 
 ---
 
-## 2) Kaggle Notebook
+## Kaggle notebook
 
-### Kaggle notes
-- Kaggle usually gives 1 GPU (often T4/P100/L4 depending on environment).
-- Disk and session time are limited; prefer smaller batches/checkpoints.
+Use smaller jobs due to session limits.
 
-### Notebook setup cells
 ```bash
 !git clone https://github.com/magpie-align/magpie.git
 %cd magpie
 !pip install -r requirements.txt
 ```
 
-Authenticate HF (use a Kaggle secret/env var):
+Authenticate HF token:
+
 ```python
 import os
-os.environ["HF_TOKEN"] = "<your_hf_token>"
+os.environ["HF_TOKEN"] = "<hf_token>"
 ```
+
 ```bash
 !huggingface-cli login --token $HF_TOKEN
 ```
 
-### Run smaller job first
+Run:
+
 ```bash
 !python exp/gen_coding_dataset.py \
   --num-samples 2000 \
   --mode single-turn \
   --output-csv /kaggle/working/coding_2k.csv \
   --model-path meta-llama/Meta-Llama-3-8B-Instruct \
-  --languages python,javascript,java
+  --languages python,javascript,java \
+  --device 0 --distance-device 0
 ```
-
-### Download output
-- File will be under `/kaggle/working/` if you set that path.
 
 ---
 
-## 3) Multi-GPU server
+## Multi-GPU server
 
-The script auto-uses all visible GPUs by default. For explicit pinning:
+Auto-detection uses all visible GPUs for generation. Explicit pinning example:
 
 ```bash
 python exp/gen_coding_dataset.py \
-  --num-samples 100000 \
+  --num-samples 200000 \
   --device 0,1,2,3 \
-  --tensor-parallel-size 4 \
-  --output-csv ./data/coding_100k.csv
+  --distance-device 0 \
+  --output-csv ./data/coding_200k.csv
 ```
 
 ---
 
-## Common tuning tips
+## Tuning tips
 
-- If OOM occurs:
-  - lower `--gpu-memory-utilization` (e.g., `0.88`)
-  - lower `--n-per-round`
-  - lower `--response-batch-size`
-  - lower `--encoding-batch-size`
-- For stricter quality:
+- If OOM:
+  - reduce `--oversample-factor`
+  - lower prompt count per run (`--num-samples`) and run multiple times
+  - pin to fewer GPUs with `--device`
+- For stricter final dataset quality:
   - `--quality-allow excellent`
   - increase `--min-neighbor-distance`
-- For multi-turn datasets:
+- For multi-turn:
   - `--mode multi-turn --mt-turns 3`
 
----
+## Output layout
 
-## Outputs
-
-- Intermediate artifacts: `data/coding_<model>_<timestamp>/...`
+- Intermediate artifacts: `data/<job_name>/...`
+- Distance file: `data/*_distance.jsonl`
 - Final CSV: path from `--output-csv`
-- CSV includes Magpie-style base fields plus optional `instruction_2/response_2/...` columns for multi-turn mode.

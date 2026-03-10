@@ -4,23 +4,22 @@
   "output_csv": "./data/magpie_coding_dataset.csv",
   "model_path": "meta-llama/Meta-Llama-3-8B-Instruct",
   "languages": ["python", "javascript", "java", "cpp", "go", "rust", "typescript"],
-  "instruction_temperature": 1.0,
-  "instruction_top_p": 1.0,
-  "response_temperature": 0.0,
-  "response_top_p": 1.0,
-  "response_repetition_penalty": 1.0,
+
+  "ins_topp": 1.0,
+  "ins_temp": 1.0,
+  "res_topp": 1.0,
+  "res_temp": 0.0,
+
   "mt_turns": 3,
   "oversample_factor": 1.8,
   "quality_allow": ["good", "excellent"],
   "min_neighbor_distance": 0.05,
   "max_repeat_count": 0,
-  "search_space_size": 500,
-  "search_batch_size": 1024,
 
   "device": null,
-  "tensor_parallel_size": null,
-  "gpu_memory_utilization": null,
-  "n_per_round": null,
-  "response_batch_size": null,
-  "encoding_batch_size": null
+  "distance_device": null,
+
+  "search_space_size": 500,
+  "search_batch_size": 1024,
+  "encoding_batch_size": 32768
 }
